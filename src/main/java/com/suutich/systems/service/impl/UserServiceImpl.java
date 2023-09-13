@@ -1,21 +1,29 @@
 package com.suutich.systems.service.impl;
 
 import com.suutich.systems.exception.LasuriAPIExceiption;
+import com.suutich.systems.model.Role;
+import com.suutich.systems.model.RoleType;
 import com.suutich.systems.model.User;
 import com.suutich.systems.payload.request.AddUserRequest;
-import com.suutich.systems.payload.request.LoginRequest;
+import com.suutich.systems.payload.request.UpdateUserRoleRequest;
+import com.suutich.systems.repository.RoleRepository;
 import com.suutich.systems.repository.UserRepository;
 import com.suutich.systems.service.UserService;
 import org.springframework.http.HttpStatus;
+import org.springframework.security.core.userdetails.UserDetails;
+import org.springframework.security.core.userdetails.UserDetailsService;
+import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.stereotype.Service;
 
 @Service
-public class UserServiceImpl implements UserService {
+public class UserServiceImpl implements UserService, UserDetailsService {
 
     private final UserRepository userRepository;
+    private final RoleRepository roleRepository;
 
-    public UserServiceImpl(UserRepository userRepository) {
+    public UserServiceImpl(UserRepository userRepository, RoleRepository roleRepository) {
         this.userRepository = userRepository;
+        this.roleRepository = roleRepository;
     }
 
     @Override
@@ -26,7 +34,16 @@ public class UserServiceImpl implements UserService {
             throw new LasuriAPIExceiption(HttpStatus.BAD_REQUEST, "Email is already exists!.");
         }
 
+        Role userRole = roleRepository.findByName(RoleType.USER)
+                .orElseGet(() -> {
+                    Role newRole = new Role();
+                    newRole.setName(RoleType.USER);
+                    return roleRepository.save(newRole);
+                });
+
         User user = addUserRequest.toEntity();
+        user.getRoles().add(userRole);
+
         return userRepository.save(user);
     }
 
@@ -54,7 +71,46 @@ public class UserServiceImpl implements UserService {
     }
 
     @Override
+    public User updateUserRole(UpdateUserRoleRequest updateRequest) {
+        User existUser = userRepository.findByEmail(updateRequest.getUserEmail());
+
+        if (existUser == null) {
+            throw new LasuriAPIExceiption(HttpStatus.BAD_REQUEST, "User not found");
+        }
+
+        RoleType requestedRole = RoleType.valueOf(updateRequest.getRole());
+
+        if (requestedRole == null) {
+            throw new LasuriAPIExceiption(HttpStatus.BAD_REQUEST, "Invalid role");
+        }
+
+        Role userRole = roleRepository.findByName(requestedRole)
+                .orElseGet(() -> {
+                    Role newRole = new Role();
+                    newRole.setName(requestedRole);
+                    return roleRepository.save(newRole);
+                });
+
+        existUser.getRoles().clear();
+        existUser.getRoles().add(userRole);
+
+        return userRepository.save(existUser);
+    }
+
+    @Override
     public User login(String email) {
         return userRepository.findByEmail(email);
+    }
+
+    @Override
+    public User getName(String name) {
+        return userRepository.findByName(name);
+    }
+
+    @Override
+    public UserDetails loadUserByUsername(String username) throws UsernameNotFoundException {
+        //User user = userRepository.findByEmail(email)
+        //        .orElseThrow(() -> new UsernameNotFoundException("사용자를 찾을 수 없습니다: " + email));
+        return null;
     }
 }

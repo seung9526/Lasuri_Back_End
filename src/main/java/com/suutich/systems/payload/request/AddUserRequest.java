@@ -5,8 +5,7 @@ import lombok.*;
 
 @Getter
 @Setter
-@Builder
-@NoArgsConstructor(access = AccessLevel.PUBLIC)
+@NoArgsConstructor(access = AccessLevel.PROTECTED)
 @AllArgsConstructor
 public class AddUserRequest {
     private String userEmail;
@@ -14,8 +13,7 @@ public class AddUserRequest {
     private String userName;
     private String userAddress;
 
-    @Builder
-    public User toEntity(){
+    public User toEntity() {
         return User.builder()
                 .email(userEmail)
                 .password(userPassword)
