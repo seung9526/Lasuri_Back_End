@@ -31,7 +31,7 @@ public class User implements UserDetails {
     private String email;
 
     @NotBlank(message = "비밀번호를 입력하세요.")
-    @Size(max = 20)
+    @Size(max = 120)
     private String password;
 
     @NotBlank(message = "이름을 입력하세요.")
@@ -48,6 +48,14 @@ public class User implements UserDetails {
             inverseJoinColumns = @JoinColumn(name = "role_id"))
     private Set<Role> roles = new HashSet<>();
 
+    @Transient
+    private Collection<? extends GrantedAuthority> authorities;
+
+    public void setAuthorities(Collection<? extends GrantedAuthority> authorities) {
+        this.authorities = authorities;
+    }
+
+
     @Builder
     public User(String email, String password, String name, String address){
         this.email = email;
@@ -58,8 +66,9 @@ public class User implements UserDetails {
 
     @Override
     public Collection<? extends GrantedAuthority> getAuthorities() {
+        // 사용자의 역할을 반환
         return roles.stream()
-                .map(role -> new SimpleGrantedAuthority(role.getName().name()))
+                .map(role -> new SimpleGrantedAuthority("ROLE_" + role.getName().name())) // 권한명은 "ROLE_"
                 .collect(Collectors.toList());
     }
 
@@ -99,4 +108,6 @@ public class User implements UserDetails {
     public boolean isEnabled() {
         return true; // 사용 가능
     }
+
+
 }

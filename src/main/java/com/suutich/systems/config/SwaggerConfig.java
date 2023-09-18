@@ -1,22 +1,23 @@
 package com.suutich.systems.config;
 
-import io.swagger.v3.oas.models.Components;
-import io.swagger.v3.oas.models.OpenAPI;
+
+import io.swagger.v3.oas.models.*;
 import io.swagger.v3.oas.models.info.Info;
-import io.swagger.v3.oas.models.security.SecurityRequirement;
-import io.swagger.v3.oas.models.security.SecurityScheme;
+import io.swagger.v3.oas.models.security.*;
 import org.springdoc.core.models.GroupedOpenApi;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.web.servlet.config.annotation.EnableWebMvc;
 import org.springframework.web.servlet.config.annotation.WebMvcConfigurer;
 
 @Configuration
+@EnableWebMvc
 public class SwaggerConfig implements WebMvcConfigurer {
 
-    private static final String SECURITY_SCHEME_NAME = "authorization";	// 추가
+    private static final String SECURITY_SCHEME_NAME = "Authorization"; // 추가
 
     @Bean
-    public GroupedOpenApi publicApi(){
+    public GroupedOpenApi publicApi() {
         return GroupedOpenApi.builder()
                 .group("v1-definition")
                 .pathsToMatch("/**")
@@ -24,7 +25,7 @@ public class SwaggerConfig implements WebMvcConfigurer {
     }
 
     @Bean
-    public OpenAPI springBlogOpenAPI(){
+    public OpenAPI springBlogOpenAPI() {
         return new OpenAPI()
                 .components(new Components()
                         // 여기부터 추가 부분

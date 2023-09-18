@@ -1,7 +1,9 @@
 package com.suutich.systems.security;
 
 import io.jsonwebtoken.*;
+import io.jsonwebtoken.io.Decoders;
 import io.jsonwebtoken.security.Keys;
+import jakarta.servlet.http.HttpServletRequest;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.InitializingBean;
@@ -29,16 +31,17 @@ public class JwtTokenProvider implements InitializingBean {
     public JwtTokenProvider(
             @Value("${jwt.secret}") String secret,
             @Value("${jwt.token-validity-in-seconds}") long tokenValidityInSeconds) {
-        this.secret = secret;
+        // 이전에 72비트로 설정된 secret 값을 변경
+        this.secret = secret; // 문자열로 설정
         this.tokenValidityInMilliseconds = tokenValidityInSeconds * 1000;
     }
+
 
     // 빈이 생성되고 주입을 받은 후에 secret값을 Base64 Decode해서 key 변수에 할당하기 위해
     @Override
     public void afterPropertiesSet() {
-        //byte[] keyBytes = Decoders.BASE64.decode(secret);
-        //this.key = Keys.hmacShaKeyFor(keyBytes);
-        this.key = Keys.secretKeyFor(SignatureAlgorithm.HS512);
+        byte[] keyBytes = Decoders.BASE64.decode(secret);
+        this.key = Keys.hmacShaKeyFor(keyBytes);
     }
 
     public String createToken(Authentication authentication) {
@@ -47,13 +50,13 @@ public class JwtTokenProvider implements InitializingBean {
                 .collect(Collectors.joining(","));
 
         // 토큰의 expire 시간을 설정
-        long now = (new Date()).getTime();
-        Date validity = new Date(now + this.tokenValidityInMilliseconds);
+        Date now = new Date();
+        Date validity = new Date(now.getTime() + this.tokenValidityInMilliseconds);
 
         return Jwts.builder()
                 .setSubject(authentication.getName())
                 .claim(AUTHORITIES_KEY, authorities) // 정보 저장
-                .signWith(key, SignatureAlgorithm.HS512) // 사용할 암호화 알고리즘과 , signature 에 들어갈 secret값 세팅
+                .signWith(key) // 사용할 암호화 알고리즘과 , signature 에 들어갈 secret값 세팅
                 .setExpiration(validity) // set Expire Time 해당 옵션 안넣으면 expire안함
                 .compact();
     }
@@ -97,4 +100,16 @@ public class JwtTokenProvider implements InitializingBean {
         }
         return false;
     }
+
+    public String resolveToken(HttpServletRequest request) {
+        String authorizationHeader = request.getHeader("Authorization");
+
+        if (authorizationHeader != null && authorizationHeader.startsWith("Bearer ")) {
+            return authorizationHeader.substring(7);
+        }
+
+        return null; // 토큰이 없는 경우 null 반환
+    }
+
+
 }
